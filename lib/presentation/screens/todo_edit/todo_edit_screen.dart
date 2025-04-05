@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_adaptive_ui/flutter_adaptive_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:web_desktop_demo/presentation/keyboard_shortcuts.dart';
+import 'package:web_desktop_demo/presentation/screens/todo_edit/layouts/mobile.dart';
 
 import '../../../app/router/app_router.dart';
 import '../../../domain/models/todo.dart';
 import '../../../domain/repositories/todo_repository.dart';
+import 'layouts/desktop.dart';
 
 class TodoEditScreen extends StatefulWidget {
   final Todo? todo;
 
-  const TodoEditScreen({
-    super.key,
-    this.todo,
-  });
+  const TodoEditScreen({super.key, this.todo});
 
   @override
   State<TodoEditScreen> createState() => _TodoEditScreenState();
@@ -29,7 +30,9 @@ class _TodoEditScreenState extends State<TodoEditScreen> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.todo?.title ?? '');
-    _descriptionController = TextEditingController(text: widget.todo?.description ?? '');
+    _descriptionController = TextEditingController(
+      text: widget.todo?.description ?? '',
+    );
     _isCompleted = widget.todo?.isCompleted ?? false;
   }
 
@@ -41,93 +44,59 @@ class _TodoEditScreenState extends State<TodoEditScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final routerDelegate = Provider.of<AppRouterDelegate>(context, listen: false);
+  Widget build(BuildContext context) => KeyboardShortcutsHandler(
+    onSave: _saveTodo,
+    onToggleTodo: () => _toggle(null),
+    child: FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
+      child: AdaptiveBuilder(
+        defaultBuilder:
+            (context, screen) => switch (screen.screenType) {
+              ScreenType.smallHandset ||
+              ScreenType.mediumHandset ||
+              ScreenType.largeHandset => MobileTodoEditScreen(
+                isNew: !_isEditing,
+                isCompleted: _isCompleted,
+                toggle: _toggle,
+                onSave: _saveTodo,
+                formKey: _formKey,
+                titleController: _titleController,
+                descriptionController: _descriptionController,
+              ),
+              ScreenType.smallTablet ||
+              ScreenType.largeTablet ||
+              ScreenType.smallDesktop ||
+              ScreenType.mediumDesktop ||
+              ScreenType.largeDesktop => DesktopTodoEditScreen(
+                isNew: !_isEditing,
+                isCompleted: _isCompleted,
+                toggle: _toggle,
+                onSave: _saveTodo,
+                formKey: _formKey,
+                titleController: _titleController,
+                descriptionController: _descriptionController,
+              ),
+            },
+      ),
+    ),
+  );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Todo' : 'Create Todo'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            routerDelegate.navigateToHome();
-          },
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16.0),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 5,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a description';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16.0),
-              if (_isEditing)
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _isCompleted,
-                      onChanged: (value) {
-                        setState(() {
-                          _isCompleted = value ?? false;
-                        });
-                      },
-                    ),
-                    const Text('Completed'),
-                  ],
-                ),
-              const SizedBox(height: 16.0),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _saveTodo,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  ),
-                  child: Text(_isEditing ? 'Update' : 'Create'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  void _toggle(bool? value) {
+    setState(() {
+      _isCompleted = value ?? !_isCompleted;
+    });
   }
 
   Future<void> _saveTodo() async {
     if (_formKey.currentState?.validate() ?? false) {
-      final todoRepository = Provider.of<TodoRepository>(context, listen: false);
-      final routerDelegate = Provider.of<AppRouterDelegate>(context, listen: false);
+      final todoRepository = Provider.of<TodoRepository>(
+        context,
+        listen: false,
+      );
+      final routerDelegate = Provider.of<AppRouterDelegate>(
+        context,
+        listen: false,
+      );
 
       if (_isEditing) {
         // Update existing todo

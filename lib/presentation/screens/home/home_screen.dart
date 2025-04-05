@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_adaptive_ui/flutter_adaptive_ui.dart';
 import 'package:provider/provider.dart';
-
-import '../../../app/router/app_router.dart';
+import 'package:web_desktop_demo/presentation/keyboard_shortcuts.dart';
+import 'package:web_desktop_demo/presentation/screens/home/layouts/desktop.dart';
 import '../../../domain/models/todo.dart';
 import '../../../domain/repositories/todo_repository.dart';
-import 'widgets/stats_widget.dart';
-import 'widgets/todo_list.dart';
+import 'layouts/mobile.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -48,55 +48,40 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final routerDelegate = Provider.of<AppRouterDelegate>(
-      context,
-      listen: false,
-    );
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Todo App'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Column(
-                children: [
-                  StatsWidget(todos: _todos),
-                  Expanded(
-                    child: TodoList(
-                      todos: _todos,
-                      onTodoTap: (todo) {
-                        routerDelegate.navigateToTodoEdit(todo: todo);
-                      },
-                      onTodoToggle: _handleTodoToggle,
-                      onTodoDelete: _handleTodoDelete,
-                    ),
-                  ),
-                ],
-              ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          routerDelegate.navigateToTodoEdit();
-        },
-        tooltip: 'Add Todo',
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => KeyboardShortcutsHandler(
+    child: AdaptiveBuilder(
+      defaultBuilder:
+          (context, screen) => switch (screen.screenType) {
+            ScreenType.smallHandset ||
+            ScreenType.mediumHandset ||
+            ScreenType.largeHandset => MobileHomeScreen(
+              isLoading: _isLoading,
+              todos: _todos,
+              toggleTodo: _handleTodoToggle,
+              deleteTodo: _handleTodoDelete,
+            ),
+            ScreenType.smallTablet ||
+            ScreenType.largeTablet ||
+            ScreenType.smallDesktop ||
+            ScreenType.mediumDesktop ||
+            ScreenType.largeDesktop => DesktopHomeScreen(
+              isLoading: _isLoading,
+              todos: _todos,
+              toggleTodo: _handleTodoToggle,
+              deleteTodo: _handleTodoDelete,
+            ),
+          },
+    ),
+  );
 
   Future<void> _handleTodoToggle(Todo todo) async {
     final updatedTodo =
         todo.isCompleted ? todo.markAsIncomplete() : todo.markAsCompleted();
 
     await todoRepository.updateTodo(updatedTodo);
-    _loadTodos();
   }
 
   Future<void> _handleTodoDelete(String id) async {
     await todoRepository.deleteTodo(id);
-    _loadTodos();
   }
 }

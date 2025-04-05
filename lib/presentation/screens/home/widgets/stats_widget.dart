@@ -1,26 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:web_desktop_demo/domain/repositories/todo_repository.dart';
 
 import '../../../../domain/models/todo.dart';
 
-class StatsWidget extends StatelessWidget {
-  final List<Todo> todos;
+class StatsWidget extends StatefulWidget {
+  const StatsWidget({super.key});
 
-  const StatsWidget({
-    super.key,
-    required this.todos,
-  });
+  @override
+  State<StatsWidget> createState() => _StatsWidgetState();
+}
+
+class _StatsWidgetState extends State<StatsWidget> {
+  late final TodoRepository repository;
+  List<Todo> _todos = [];
+
+  @override
+  void initState() {
+    repository = context.read<TodoRepository>();
+    _loadTodos();
+    repository.addListener(_loadTodos);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    repository.removeListener(_loadTodos);
+    super.dispose();
+  }
+
+  Future<void> _loadTodos() async {
+    final todos = await repository.getAllTodos();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _todos = todos;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final completedCount = todos.where((todo) => todo.isCompleted).length;
-    final pendingCount = todos.length - completedCount;
-    final completionPercentage = todos.isEmpty
-        ? 0.0
-        : (completedCount / todos.length) * 100;
+    final completedCount = _todos.where((todo) => todo.isCompleted).length;
+    final pendingCount = _todos.length - completedCount;
+    final completionPercentage =
+        _todos.isEmpty ? 0.0 : (completedCount / _todos.length) * 100;
 
     return Container(
       padding: const EdgeInsets.all(16.0),
-      color: Theme.of(context).colorScheme.surfaceVariant,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -34,7 +64,7 @@ class StatsWidget extends StatelessWidget {
               _buildStatItem(
                 context,
                 'Total',
-                todos.length.toString(),
+                _todos.length.toString(),
                 Icons.list,
                 Colors.blue,
               ),
@@ -78,26 +108,42 @@ class StatsWidget extends StatelessWidget {
     Color color,
   ) {
     return Expanded(
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 4.0),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+      child: MouseRegion(
+        onEnter: (event) {
+          print('StatsWidget mouse enter to $label');
+        },
+        onExit: (event) {
+          print('StatsWidget mouse exit from $label');
+        },
+        onHover: (event) {
+          print('StatsWidget mouse hover on $label');
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 4.0),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    value,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

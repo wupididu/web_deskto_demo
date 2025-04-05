@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:web_desktop_demo/app/router/app_router.dart';
 
 import '../../../../domain/models/todo.dart';
 
@@ -49,10 +52,7 @@ class TodoList extends StatelessWidget {
             color: Colors.red,
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.only(right: 16.0),
-            child: const Icon(
-              Icons.delete,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.delete, color: Colors.white),
           ),
           direction: DismissDirection.endToStart,
           onDismissed: (_) => onTodoDelete(todo.id),
@@ -63,12 +63,40 @@ class TodoList extends StatelessWidget {
                 value: todo.isCompleted,
                 onChanged: (_) => onTodoToggle(todo),
               ),
+              focusNode: FocusNode(
+                onKeyEvent: (node, event) {
+                  if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                    context.read<AppRouterDelegate>().navigateToTodoEdit(
+                      todo: todo,
+                    );
+                    return KeyEventResult.handled;
+                  }
+
+                  if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                    node.nextFocus();
+                    return KeyEventResult.handled;
+                  }
+
+                  if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                    node.previousFocus();
+                    return KeyEventResult.handled;
+                  }
+
+                  if (event.logicalKey == LogicalKeyboardKey.backspace) {
+                    onTodoDelete(todo.id);
+                    return KeyEventResult.handled;
+                  }
+
+                  return KeyEventResult.ignored;
+                },
+              ),
               title: Text(
                 todo.title,
                 style: TextStyle(
-                  decoration: todo.isCompleted
-                      ? TextDecoration.lineThrough
-                      : TextDecoration.none,
+                  decoration:
+                      todo.isCompleted
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
                   color: todo.isCompleted ? Colors.grey : null,
                 ),
               ),
@@ -76,9 +104,7 @@ class TodoList extends StatelessWidget {
                 todo.description,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: todo.isCompleted ? Colors.grey : null,
-                ),
+                style: TextStyle(color: todo.isCompleted ? Colors.grey : null),
               ),
               trailing: Text(
                 _formatDate(todo.createdAt),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:web_desktop_demo/presentation/screens/todo_edit/todo_edit_screen.dart';
 
 import '../../domain/models/todo.dart';
 import '../../presentation/screens/home/home_screen.dart';
-import '../../presentation/screens/todo_edit/todo_edit_screen.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -16,16 +16,10 @@ class AppPages {
   }
 
   static MaterialPage<dynamic> home() {
-    return _createPage(
-      const HomeScreen(),
-      AppRoute.home,
-    );
+    return _createPage(const HomeScreen(), AppRoute.home);
   }
 
   static MaterialPage<dynamic> todoEdit({Todo? todo}) {
-    return _createPage(
-      TodoEditScreen(todo: todo),
-      AppRoute.todoEdit,
-    );
+    return _createPage(TodoEditScreen(todo: todo), AppRoute.todoEdit);
   }
 }

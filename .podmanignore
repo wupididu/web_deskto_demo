@@ -1,0 +1,45 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+*.dart.js
+*.info.json
+*.js
+*.js.deps
+*.js.map
+
+# Rust
+rust_wasm/target/
+**/*.rs.bk
+Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Docker/Podman
+Dockerfile
+docker-compose.yml
+.podmanignore
+
+# Logs
+*.log
+
+# Android/iOS/macOS/Windows specific files
+android/
+ios/
+macos/
+windows/

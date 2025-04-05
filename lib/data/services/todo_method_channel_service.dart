@@ -1,14 +1,20 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:web_desktop_demo/data/services/todo_service.dart';
 
 import '../../domain/models/todo.dart';
 
-class TodoMethodChannelService {
+class TodoServiceImpl implements TodoService {
+  TodoServiceImpl() {
+    print('Use MethodChannel TodoService');
+  }
+
   static const MethodChannel _channel = MethodChannel(
     'com.example.web_desktop_demo/todo_storage',
   );
 
   // Get all todos from the native platform
+  @override
   Future<List<Todo>> getAllTodos() async {
     try {
       final String? jsonString = await _channel.invokeMethod<String>(
@@ -28,6 +34,7 @@ class TodoMethodChannelService {
   }
 
   // Get a todo by id from the native platform
+  @override
   Future<Todo?> getTodoById(String id) async {
     try {
       final String? jsonString = await _channel.invokeMethod<String>(
@@ -48,6 +55,7 @@ class TodoMethodChannelService {
   }
 
   // Add a todo to the native platform
+  @override
   Future<bool> addTodo(Todo todo) async {
     try {
       final Map<String, dynamic> todoJson = todo.toJson();
@@ -65,6 +73,7 @@ class TodoMethodChannelService {
   }
 
   // Update a todo on the native platform
+  @override
   Future<bool> updateTodo(Todo todo) async {
     try {
       final Map<String, dynamic> todoJson = todo.toJson();
@@ -82,6 +91,7 @@ class TodoMethodChannelService {
   }
 
   // Delete a todo from the native platform
+  @override
   Future<bool> deleteTodo(String id) async {
     try {
       final bool? result = await _channel.invokeMethod<bool>('deleteTodo', {

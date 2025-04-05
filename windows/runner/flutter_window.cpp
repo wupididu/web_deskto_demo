@@ -1,8 +1,11 @@
 #include "flutter_window.h"
 
 #include <optional>
+#include <map>
+#include <string>
 
 #include "flutter/generated_plugin_registrant.h"
+#include "TodoStorage.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
@@ -25,6 +28,82 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
+  
+  // Создаем экземпляр TodoStorage
+  static auto todoStorage = std::make_unique<TodoStorage>();
+  
+  // Регистрируем метод-канал
+  flutter::MethodChannel<flutter::EncodableValue> todoChannel(
+    flutter_controller_->engine()->messenger(),
+    "com.example.web_desktop_demo/todo_storage",
+    &flutter::StandardMethodCodec::GetInstance());
+  
+  // Устанавливаем обработчик вызовов методов
+  todoChannel.SetMethodCallHandler(
+    [todoStorage = todoStorage.get()](const flutter::MethodCall<flutter::EncodableValue>& call,
+      std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+      
+      const std::string& method_name = call.method_name();
+      
+      if (method_name == "getAllTodos") {
+        result->Success(flutter::EncodableValue(todoStorage->getAllTodos()));
+      } else if (method_name == "getTodoById") {
+        const auto* arguments = std::get_if<flutter::EncodableMap>(call.arguments());
+        if (arguments) {
+          auto id_it = arguments->find(flutter::EncodableValue("id"));
+          if (id_it != arguments->end() && std::holds_alternative<std::string>(id_it->second)) {
+            const std::string& id = std::get<std::string>(id_it->second);
+            result->Success(flutter::EncodableValue(todoStorage->getTodoById(id)));
+          } else {
+            result->Error("INVALID_ARGS", "Invalid arguments for getTodoById");
+          }
+        } else {
+          result->Error("INVALID_ARGS", "Invalid arguments for getTodoById");
+        }
+      } else if (method_name == "addTodo") {
+        const auto* arguments = std::get_if<flutter::EncodableMap>(call.arguments());
+        if (arguments) {
+          auto todo_it = arguments->find(flutter::EncodableValue("todo"));
+          if (todo_it != arguments->end() && std::holds_alternative<std::string>(todo_it->second)) {
+            const std::string& todoJson = std::get<std::string>(todo_it->second);
+            result->Success(flutter::EncodableValue(todoStorage->addTodo(todoJson)));
+          } else {
+            result->Error("INVALID_ARGS", "Invalid arguments for addTodo");
+          }
+        } else {
+          result->Error("INVALID_ARGS", "Invalid arguments for addTodo");
+        }
+      } else if (method_name == "updateTodo") {
+        const auto* arguments = std::get_if<flutter::EncodableMap>(call.arguments());
+        if (arguments) {
+          auto todo_it = arguments->find(flutter::EncodableValue("todo"));
+          if (todo_it != arguments->end() && std::holds_alternative<std::string>(todo_it->second)) {
+            const std::string& todoJson = std::get<std::string>(todo_it->second);
+            result->Success(flutter::EncodableValue(todoStorage->updateTodo(todoJson)));
+          } else {
+            result->Error("INVALID_ARGS", "Invalid arguments for updateTodo");
+          }
+        } else {
+          result->Error("INVALID_ARGS", "Invalid arguments for updateTodo");
+        }
+      } else if (method_name == "deleteTodo") {
+        const auto* arguments = std::get_if<flutter::EncodableMap>(call.arguments());
+        if (arguments) {
+          auto id_it = arguments->find(flutter::EncodableValue("id"));
+          if (id_it != arguments->end() && std::holds_alternative<std::string>(id_it->second)) {
+            const std::string& id = std::get<std::string>(id_it->second);
+            result->Success(flutter::EncodableValue(todoStorage->deleteTodo(id)));
+          } else {
+            result->Error("INVALID_ARGS", "Invalid arguments for deleteTodo");
+          }
+        } else {
+          result->Error("INVALID_ARGS", "Invalid arguments for deleteTodo");
+        }
+      } else {
+        result->NotImplemented();
+      }
+    });
+  
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {

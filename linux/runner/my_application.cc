@@ -6,6 +6,141 @@
 #endif
 
 #include "flutter/generated_plugin_registrant.h"
+#include "todo_storage.h"
+
+// Глобальный экземпляр TodoStorage
+static TodoStorage* g_todo_storage = nullptr;
+
+// Обработчик метода getAllTodos
+static void handle_get_all_todos(FlMethodCall* method_call, FlMethodResponse** response) {
+  std::string todos = g_todo_storage->getAllTodos();
+  *response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_string(todos.c_str())));
+}
+
+// Обработчик метода getTodoById
+static void handle_get_todo_by_id(FlMethodCall* method_call, FlMethodResponse** response) {
+  FlValue* args = fl_method_call_get_args(method_call);
+  if (fl_value_get_type(args) != FL_VALUE_TYPE_MAP) {
+    *response = FL_METHOD_RESPONSE(fl_method_error_response_new("INVALID_ARGS",
+                                                              "Invalid arguments for getTodoById",
+                                                              nullptr));
+    return;
+  }
+  
+  FlValue* id_value = fl_value_lookup_string(args, "id");
+  if (id_value == nullptr || fl_value_get_type(id_value) != FL_VALUE_TYPE_STRING) {
+    *response = FL_METHOD_RESPONSE(fl_method_error_response_new("INVALID_ARGS",
+                                                              "Missing or invalid 'id' parameter",
+                                                              nullptr));
+    return;
+  }
+  
+  const char* id = fl_value_get_string(id_value);
+  std::string todo = g_todo_storage->getTodoById(id);
+  
+  if (todo.empty()) {
+    *response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
+  } else {
+    *response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_string(todo.c_str())));
+  }
+}
+
+// Обработчик метода addTodo
+static void handle_add_todo(FlMethodCall* method_call, FlMethodResponse** response) {
+  FlValue* args = fl_method_call_get_args(method_call);
+  if (fl_value_get_type(args) != FL_VALUE_TYPE_MAP) {
+    *response = FL_METHOD_RESPONSE(fl_method_error_response_new("INVALID_ARGS",
+                                                              "Invalid arguments for addTodo",
+                                                              nullptr));
+    return;
+  }
+  
+  FlValue* todo_value = fl_value_lookup_string(args, "todo");
+  if (todo_value == nullptr || fl_value_get_type(todo_value) != FL_VALUE_TYPE_STRING) {
+    *response = FL_METHOD_RESPONSE(fl_method_error_response_new("INVALID_ARGS",
+                                                              "Missing or invalid 'todo' parameter",
+                                                              nullptr));
+    return;
+  }
+  
+  const char* todo_json = fl_value_get_string(todo_value);
+  bool result = g_todo_storage->addTodo(todo_json);
+  
+  *response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_bool(result)));
+}
+
+// Обработчик метода updateTodo
+static void handle_update_todo(FlMethodCall* method_call, FlMethodResponse** response) {
+  FlValue* args = fl_method_call_get_args(method_call);
+  if (fl_value_get_type(args) != FL_VALUE_TYPE_MAP) {
+    *response = FL_METHOD_RESPONSE(fl_method_error_response_new("INVALID_ARGS",
+                                                              "Invalid arguments for updateTodo",
+                                                              nullptr));
+    return;
+  }
+  
+  FlValue* todo_value = fl_value_lookup_string(args, "todo");
+  if (todo_value == nullptr || fl_value_get_type(todo_value) != FL_VALUE_TYPE_STRING) {
+    *response = FL_METHOD_RESPONSE(fl_method_error_response_new("INVALID_ARGS",
+                                                              "Missing or invalid 'todo' parameter",
+                                                              nullptr));
+    return;
+  }
+  
+  const char* todo_json = fl_value_get_string(todo_value);
+  bool result = g_todo_storage->updateTodo(todo_json);
+  
+  *response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_bool(result)));
+}
+
+// Обработчик метода deleteTodo
+static void handle_delete_todo(FlMethodCall* method_call, FlMethodResponse** response) {
+  FlValue* args = fl_method_call_get_args(method_call);
+  if (fl_value_get_type(args) != FL_VALUE_TYPE_MAP) {
+    *response = FL_METHOD_RESPONSE(fl_method_error_response_new("INVALID_ARGS",
+                                                              "Invalid arguments for deleteTodo",
+                                                              nullptr));
+    return;
+  }
+  
+  FlValue* id_value = fl_value_lookup_string(args, "id");
+  if (id_value == nullptr || fl_value_get_type(id_value) != FL_VALUE_TYPE_STRING) {
+    *response = FL_METHOD_RESPONSE(fl_method_error_response_new("INVALID_ARGS",
+                                                              "Missing or invalid 'id' parameter",
+                                                              nullptr));
+    return;
+  }
+  
+  const char* id = fl_value_get_string(id_value);
+  bool result = g_todo_storage->deleteTodo(id);
+  
+  *response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_bool(result)));
+}
+
+// Обработчик вызова методов
+static void method_call_handler(FlMethodChannel* channel,
+                               FlMethodCall* method_call,
+                               gpointer user_data) {
+  const gchar* method = fl_method_call_get_name(method_call);
+  FlMethodResponse* response = nullptr;
+  
+  if (strcmp(method, "getAllTodos") == 0) {
+    handle_get_all_todos(method_call, &response);
+  } else if (strcmp(method, "getTodoById") == 0) {
+    handle_get_todo_by_id(method_call, &response);
+  } else if (strcmp(method, "addTodo") == 0) {
+    handle_add_todo(method_call, &response);
+  } else if (strcmp(method, "updateTodo") == 0) {
+    handle_update_todo(method_call, &response);
+  } else if (strcmp(method, "deleteTodo") == 0) {
+    handle_delete_todo(method_call, &response);
+  } else {
+    response = FL_METHOD_RESPONSE(fl_method_not_implemented_response_new());
+  }
+  
+  fl_method_call_respond(method_call, response, nullptr);
+  g_object_unref(response);
+}
 
 struct _MyApplication {
   GtkApplication parent_instance;
@@ -58,6 +193,24 @@ static void my_application_activate(GApplication* application) {
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
+  
+  // Создаем экземпляр TodoStorage
+  if (g_todo_storage == nullptr) {
+    g_todo_storage = new TodoStorage();
+  }
+  
+  // Регистрируем метод-канал
+  g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
+  g_autoptr(FlMethodChannel) channel = fl_method_channel_new(
+    fl_engine_get_binary_messenger(fl_view_get_engine(view)),
+    "com.example.web_desktop_demo/todo_storage",
+    FL_METHOD_CODEC(codec));
+  
+  // Устанавливаем обработчик вызовов методов
+  fl_method_channel_set_method_call_handler(channel,
+                                          method_call_handler,
+                                          nullptr,
+                                          nullptr);
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
@@ -103,6 +256,13 @@ static void my_application_shutdown(GApplication* application) {
 static void my_application_dispose(GObject* object) {
   MyApplication* self = MY_APPLICATION(object);
   g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
+  
+  // Освобождаем ресурсы TodoStorage
+  if (g_todo_storage != nullptr) {
+    delete g_todo_storage;
+    g_todo_storage = nullptr;
+  }
+  
   G_OBJECT_CLASS(my_application_parent_class)->dispose(object);
 }
 

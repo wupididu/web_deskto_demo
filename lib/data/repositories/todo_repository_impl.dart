@@ -1,27 +1,25 @@
 import 'dart:async';
 import 'package:uuid/uuid.dart';
+import 'package:web_desktop_demo/data/services/todo_service.dart';
 
 import '../../domain/models/todo.dart';
 import '../../domain/repositories/todo_repository.dart';
-import '../services/todo_method_channel_service.dart';
 
 class TodoRepositoryImpl extends TodoRepository {
-  final TodoMethodChannelService _methodChannelService;
+  final TodoService _service;
   final _uuid = const Uuid();
 
   // Constructor with optional parameter for dependency injection
-  TodoRepositoryImpl({TodoMethodChannelService? methodChannelService})
-    : _methodChannelService =
-          methodChannelService ?? TodoMethodChannelService();
+  TodoRepositoryImpl({required TodoService service}) : _service = service;
 
   @override
   Future<List<Todo>> getAllTodos() async {
-    return await _methodChannelService.getAllTodos();
+    return await _service.getAllTodos();
   }
 
   @override
   Future<Todo?> getTodoById(String id) async {
-    return await _methodChannelService.getTodoById(id);
+    return await _service.getTodoById(id);
   }
 
   @override
@@ -29,19 +27,19 @@ class TodoRepositoryImpl extends TodoRepository {
     // Generate UUID if not provided
     final newTodo = todo.id.isEmpty ? todo.copyWith(id: _uuid.v4()) : todo;
 
-    await _methodChannelService.addTodo(newTodo);
+    await _service.addTodo(newTodo);
     notifyListeners();
   }
 
   @override
   Future<void> updateTodo(Todo todo) async {
-    await _methodChannelService.updateTodo(todo);
+    await _service.updateTodo(todo);
     notifyListeners();
   }
 
   @override
   Future<void> deleteTodo(String id) async {
-    await _methodChannelService.deleteTodo(id);
+    await _service.deleteTodo(id);
     notifyListeners();
   }
 }

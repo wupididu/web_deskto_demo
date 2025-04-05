@@ -1,0 +1,19 @@
+[package]
+name = "todo_wasm"
+version = "0.1.0"
+edition = "2021"
+description = "WASM implementation of TodoService for Flutter web app"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = ["console", "Storage", "Window"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"  # Optimize for size
+lto = true       # Link-time optimization

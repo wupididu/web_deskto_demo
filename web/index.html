@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,7 +19,9 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Todo App - Manage your tasks efficiently">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0175C2">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -27,12 +30,53 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="favicon.png" />
 
-  <title>web_desktop_demo</title>
+  <title>Todo App</title>
   <link rel="manifest" href="manifest.json">
+  <!-- Load app.js synchronously before Flutter bootstrap -->
+  <script src="todo_service.js"></script>
+  <script src="wasm_todo_service.js"></script>
+  <!-- <script src="flutter_bootstrap.js" async></script> -->
+  
+  <!-- <style type="text/css">
+    #flutter_host {
+        width: 500px;
+        height: 500px;
+        background-color: cadetblue;
+    }
+  </style> -->
 </head>
+
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- <H1>This is demo app</H1> -->
+  <div id="flutter_host">Loading...</div>
+
+  <script>
+    {{flutter_js}}
+    {{flutter_build_config}}
+
+    const flutterHost = document.querySelector("#flutter_host");
+    flutterHost.textContent = "Loading Entrypoint...";
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const renderer = searchParams.get('renderer');
+    const userConfig = renderer ? { 'renderer': renderer } : {};
+    _flutter.loader.load({
+      config: userConfig,
+      onEntrypointLoaded: async function(engineInitializer) {
+        flutterHost.textContent = "Initializing engine...";
+
+        let appRunner = await engineInitializer.initializeEngine({
+          // hostElement: document.querySelector("#flutter_host")
+        });
+
+        flutterHost.textContent = "Running app...";
+
+        await appRunner.runApp();
+    }
+    });
+  </script>
 </body>
+
 </html>
